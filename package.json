@@ -1,0 +1,68 @@
+{
+  "name": "rendez",
+  "version": "0.1.0",
+  "description": "brings order to the galaxy",
+  "author": "Arpad Borsos <arpad.borsos@googlemail.com>",
+  "license": "LGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Swatinem/rendez.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Swatinem/rendez/issues"
+  },
+  "homepage": "https://github.com/Swatinem/rendez#readme",
+  "main": "dist/rendez.js",
+  "module": "dist/rendez.mjs",
+  "browser": "dist/rendez.umd.js",
+  "types": "dist/rendez.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rimraf dist && rollup -c",
+    "prepublishOnly": "npm run test && npm run build",
+    "test": "jest --runInBand"
+  },
+  "peerDependencies": {
+    "react": "^16.8.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.0",
+    "@types/node": "^10.12.18",
+    "@types/react": "^16.7.18",
+    "@types/react-dom": "^16.0.11",
+    "jest": "^24.0.0",
+    "prettier": "^1.15.3",
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "rollup": "^1.0.0",
+    "rollup-plugin-dts": "^0.9.0",
+    "rollup-plugin-json": "^3.1.0",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "ts-jest": "^23.10.5",
+    "tslib": "^1.9.3",
+    "typescript": "3.3.1"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/js-with-ts",
+    "collectCoverage": true,
+    "coverageReporters": [
+      "html",
+      "json",
+      "text-summary"
+    ],
+    "coveragePathIgnorePatterns": [
+      "__tests__",
+      "node_modules"
+    ],
+    "testMatch": [
+      "**/?(*.)+(spec|test).(ts|tsx)"
+    ]
+  },
+  "prettier": {
+    "printWidth": 120,
+    "trailingComma": "all"
+  }
+}
