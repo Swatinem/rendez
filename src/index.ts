@@ -1,55 +1,82 @@
-import React from "react";
+import React, { ReactNodeArray, ReactNode, ReactElement } from "react";
 
-interface ElementDefinition {
-  elem: string;
-  props?: { [name: string]: any };
-  children?: ChildDefinition;
+interface Options {
+  /**
+   * By default, `React.Fragment`s will be flattened and not considered by the
+   * `key` matching.
+   * If you would like to treat `Fragment`s like other keyed react elements,
+   * set this option to `true`.
+   */
+  opaqueFragments?: boolean;
 }
 
-export type ChildDefinition = Array<string | ElementDefinition>;
+interface WithChildren {
+  children?: ReactNode | ReactNodeArray;
+}
 
-type ReactChildren = React.ReactNode | React.ReactNodeArray;
+/**
+ * This merges the `props` and `children` of `template` into the given `node`.
+ * See `mergeKeyedNodes` for how the children will be treated.
+ */
+export function mergeNode(
+  template: ReactElement<WithChildren>,
+  node: ReactElement<WithChildren>,
+  options: Options = {},
+): ReactElement<any> {
+  let { children } = node.props;
+  if (template.props.children && children) {
+    children = mergeKeyedNodes(toArray(template.props.children), toArray(children), options);
+  }
+  return React.cloneElement(node, { ...template.props, children });
+}
 
-export function mergeChildren(children: ChildDefinition, reactChildren: ReactChildren): React.ReactNodeArray {
-  const keyedChildren = getKeyedChildren(reactChildren);
+function toArray(nodes: ReactNode | ReactNodeArray) {
+  return Array.isArray(nodes) ? nodes : [nodes];
+}
+/**
+ * Given two `ReactNodeArray`s, this will map over all the nodes in `template`,
+ * and look for each `ReactElement` will look up a corresponding node in `nodes`
+ * based on `key` and then use `mergeNode` on those.
+ * This will ignore all non-`ReactElement` `nodes` as well as those without
+ * a corresponding element based on `key`.
+ */
+export function mergeKeyedNodes(
+  template: ReactNodeArray,
+  nodes: ReactNodeArray,
+  options: Options = {},
+): ReactNodeArray {
+  const keyedNodes = getKeyedNodes(nodes, options);
 
-  return children.map(child => {
-    if (typeof child === "string") {
-      return child;
+  return template.map(template => {
+    if (!React.isValidElement(template) || template.key === null) {
+      return template;
     }
-    const reactChild = keyedChildren.get(child.elem);
-    return mergeElement(child, reactChild);
+    const node = keyedNodes.get(template.key);
+    if (!node) {
+      return template;
+    }
+
+    return mergeNode(template, node);
   });
 }
 
-function mergeElement(def: ElementDefinition, elem?: React.ReactElement<any>): React.ReactNode {
-  if (!elem) {
-    return React.createElement(def.elem, def.props, ...(def.children ? mergeChildren(def.children, undefined) : []));
-  }
-  let { children } = elem.props;
-  if (def.children && children) {
-    children = mergeChildren(def.children, children);
-  }
-  return React.cloneElement(elem, { ...def.props, children });
-}
+type KeyMap = Map<string | number, React.ReactElement<any>>;
 
-type KeyMap = Map<string, React.ReactElement<any>>;
-
-function getKeyedChildren(children?: ReactChildren) {
+function getKeyedNodes(children: ReactNodeArray, options: Options) {
   const map: KeyMap = new Map();
 
-  if (!children) {
-    return map;
-  }
-  React.Children.forEach(children, (child: React.ReactNode) => {
-    if (isReactElement(child) && child.key) {
-      map.set(String(child.key), child);
-    }
-  });
+  React.Children.forEach(children, collectChildren);
 
   return map;
-}
 
-function isReactElement(elem: React.ReactNode): elem is React.ReactElement<any> {
-  return typeof elem === "object" && elem !== null && "type" in elem && "props" in elem;
+  function collectChildren(node: ReactNode) {
+    if (!React.isValidElement(node)) {
+      return;
+    }
+    if (node.key !== null) {
+      map.set(node.key, node);
+    } else if (node.type === React.Fragment && !options.opaqueFragments) {
+      React.Children.forEach((node.props as any).children, collectChildren);
+    }
+  }
 }
